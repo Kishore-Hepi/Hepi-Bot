@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HepiBot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    
+    body {
+      margin: 0;
+      background: linear-gradient(135deg, #001f3f, #003366);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+    }
+    header img {
+      height: 40px;
+      margin-right: 10px;
+    }
+    header h1 {
+      font-size: 24px;
+    }
+    #chat {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #e8f0fe;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      color: #000;
+    }
+    .message {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 15px;
+      max-width: 80%;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .user {
+      background-color: #cce5ff;
+      align-self: flex-end;
+    }
+    .bot {
+      background-color: #ffffff;
+      align-self: flex-start;
+    }
+    #input-area {
+      display: flex;
+      padding: 10px;
+      background: #fff;
+      border-top: 2px solid #ccc;
+    }
+    #input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    #send, #mic {
+      background: #0074D9;
+      border: none;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 50%;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+    #send:hover, #mic:hover {
+      background: #005fa3;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712027.png" alt="HepiBot Logo" />
+    <h1>HepiBot</h1>
+  </header>
+  <div id="chat"></div>
+  <div id="input-area">
+    <input type="text" id="input" placeholder="Ask me anything..." />
+    <button id="mic">🎤</button>
+    <button id="send">➤</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    const micBtn = document.getElementById("mic");
+
+    const API_KEY = "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"; // Replace with your actual key
+
+    function appendMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      msg.innerText = text;
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+      appendMessage("user", message);
+      input.value = "";
+
+      const payload = {
+        model: "mistralai/mistral-7b-instruct",
+        messages: [{ role: "user", content: message }],
+      };
+
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${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}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://replit.com/@yourusername/HepiBot",
+            "X-Title": "HepiBot"
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          appendMessage("bot", `❌ Error: ${data.error.message}`);
+          return;
+        }
+
+        const reply = data.choices?.[0]?.message?.content || "🤖 No reply";
+        appendMessage("bot", reply);
+      } catch (err) {
+        appendMessage("bot", "⚠️ Network error");
+        console.error(err);
+      }
+    }
+
+    sendBtn.onclick = sendMessage;
+    input.addEventListener("keydown", (e) => e.key === "Enter" && sendMessage());
+
+    // Voice to text
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      micBtn.onclick = () => {
+        recognition.start();
+      };
+
+      recognition.onresult = (event) => {
+        input.value = event.results[0][0].transcript;
+      };
+    } else {
+      micBtn.disabled = true;
+      micBtn.innerText = 'X';
+    }
+  </script>
+</body>
+</html>
+
